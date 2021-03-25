@@ -1,33 +1,31 @@
-/* eslint-disable no-console */
-const fetchPokemon = () => {
-  const getPokemonUrl = (id) => `https://pokeapi.co/api/v2/pokemon/${id}`;
+const getPokemonUrl = (id) => `https://pokeapi.co/api/v2/pokemon/${id}`;
 
-  const pokemonPromises = [];
+const generatorPokemonPromises = () => Array(150).fill().map((_, index) =>
+  // eslint-disable-next-line implicit-arrow-linebreak
+  fetch(getPokemonUrl(index + 1)).then((response) => response.json()));
 
-  // eslint-disable-next-line no-plusplus
-  for (let i = 1; i <= 150; i++) {
-    pokemonPromises.push(fetch(getPokemonUrl(i)).then((response) => response.json()));
-  }
+const generateHTML = (pokemons) => pokemons.reduce((acc, { name, id, types }) => {
+  const ElementTypes = types.map((typeInfo) => typeInfo.type.name);
+  // eslint-disable-next-line no-param-reassign
+  acc += `
+      <li class="card" ${ElementTypes[0]}>
+        <img class="card-image" alt="${name}" src="https://pokeres.bastionbot.org/images/pokemon/${id}.png" />
+        <h2 class="card-title">${id}. ${name}</h2>
+        <p class="sub-title">${types.join(' | ')}</P>
+      </li>
+    `;
+  return acc;
+}, '');
 
-  Promise.all(pokemonPromises)
-    .then((pokemons) => {
-      // console.log(pokemons);
+const insertPokemonIntiPage = (pokemons) => {
+  const ul = document.querySelector('[data-js="pokedex"]');
 
-      const lisPokemons = pokemons.reduce((acc, pokemon) => {
-        const types = pokemon.types.map((typeInfo) => typeInfo.type.name)
-        // eslint-disable-next-line no-param-reassign
-        acc += `
-          <li class="card">
-            <img class="card-image" ${types[0]} alt="${pokemon.name}" src="https://pokeres.bastionbot.org/images/pokemon/${pokemon.id}.png" />
-            <h2 class="card-title">${pokemon.id}. ${pokemon.name}</h2>
-            <p class="sub-title">${types.join(' | ')}</P>
-          </li>
-        `;
-        return acc;
-      }, '');
-
-      console.log(lisPokemons);
-    });
+  ul.innerHTML = pokemons;
 };
 
-fetchPokemon();
+const pokemonPromises = generatorPokemonPromises();
+
+Promise.all(pokemonPromises)
+  .then(generateHTML)
+
+  .then(insertPokemonIntiPage);
